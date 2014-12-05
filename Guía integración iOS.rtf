@@ -1,0 +1,217 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fnil\fcharset0 Tahoma;}
+{\colortbl;\red255\green255\blue255;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}.}{\leveltext\leveltemplateid1\'02\'00.;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid1}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}}
+\paperw11900\paperh16840\margl1440\margr1440\vieww21780\viewh13880\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural
+
+\f0\b\fs36 \cf0 \ul \ulc0 Integraci\'f3n iOS:
+\b0 \
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\qj
+
+\b \cf0 \ulnone 1.
+\b0  A\'f1adir proyectos:\
+	- Flurry (flurry_2)\
+	- Plugin Protocol\
+\
+
+\b 2.
+\b0  Header paths:\
+	- /plugin/plugins/flurry_2/include\
+	- /plugin/protocols/include\
+\
+
+\b 3.
+\b0  Linking:\
+	- Other Linker Flags: -ObjC\
+\
+
+\b 4.
+\b0  Link Binary With Libraries:\
+	- libPluginFlurry.a\
+	- libPluginProtocol.a\
+	- MediaPlayer.framework\
+	- AdSuport.framework\
+	- SystemConfiguration.framework\
+	- Security.framework\
+\
+
+\b 5.
+\b0  Target dependencies:\
+	- PluginProtocol\
+	- PluginFlurry\
+\
+
+\b 6.
+\b0  C\'f3digo de AppDelegate:\
+\
+	#include "AppDelegate.h"\
+	#include "PluginManager.h"\
+	#include "ProtocolAnalytics.h"\
+	#include "ProtocolAds.h"\
+\
+	#include "AdsFlurryDelegateHunty.h" -----> Clase de delegate a implementar\
+\
+	using namespace cocos2d::plugin;\
+\
+	#define FLURRY_KEY_IOS " "\
+	#define FLURRY_KEY_ANDROID " "\
+\
+	ProtocolAnalytics* g_pAnalytics = NULL;\
+	ProtocolAds* g_pAds = NULL;\
+	AdsFlurryDelegateHunty* g_pDelegate = NULL;\
+\
+	std::string s_strAppKey = "";\
+\
+	void AppDelegate::loadAnalyticsPlugin()  -----> static\
+	\{\
+		PluginProtocol* pPlugin = NULL;\
+		\
+		std::string flurryKey = "";\
+\
+		#if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)\
+			flurryKey = FLURRY_KEY_IOS;\
+		#elif (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)\
+			flurryKey = FLURRY_KEY_ANDROID;\
+		#endif\
+\
+		pPlugin = PluginManager::getInstance()->loadPlugin("AnalyticsFlurry");\
+		s_strAppKey = flurryKey;\
+		g_pAnalytics = dynamic_cast<ProtocolAnalytics*>(pPlugin);\
+\
+		pPlugin = PluginManager::getInstance()->loadPlugin("AdsFlurry");\
+		g_pAds = dynamic_cast<ProtocolAds*>(pPlugin);\
+\
+		g_pDelegate = new AdsFlurryDelegateHunty;\
+	\}\
+\
+	bool AppDelegate::applicationDidFinishLaunching()\
+	\{\
+		loadAnalyticsPlugin();\
+		\
+		g_pAnalytics->setDebugMode(true);\
+		g_pAnalytics->startSession(s_strAppKey.c_str());\
+		g_pAnalytics->setCaptureUncaughtException(true);\
+		g_pAnalytics->setSessionContinueMillis(10000);\
+		\
+		const char* sdkVer = g_pAnalytics->getSDKVersion();\
+		CCLog("SDK Version : %s", sdkVer);\
+\
+		g_pAds->setDebugMode(true);\
+		PluginParam pParamA (s_strAppKey.c_str());\
+		g_pAds->callFuncWithParam("startSession", &pParamA, NULL);\
+\
+		PluginParam pParamB (86400); //24 horas, si se deja a 0 cada vez que se haga la llamada del Ad se har\'e1 la petici\'f3n\
+		g_pAds->callFuncWithParam("setTime", &pParamB, NULL);\
+\
+		g_pAds->setAdsListener(dynamic_cast<AdsListener*>(g_pDelegate));\
+\
+		//launch scene\
+\
+		CCDirector *pDirector = CCDirector::sharedDirector();\
+		pDirector->setOpenGLView (CCEGLView::sharedOpenGLView());\
+\
+		pDirector->setAnimationInterval(1.0/60);\
+		CCScene *pScene = HelloWorld::scene();\
+		pDirector->runWithScene(pScene);\
+\
+		return true;\
+	\}\
+\
+
+\b 7.
+\b0  C\'f3digo de escena\
+	\
+	#include "PluginManager.h"\
+	#include "ProtocolAnalytics.h"\
+	#include "ProtocolAds.h"\
+	#include "AppDelegate.h"\
+\
+\pard\tx220\tx720\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li720\fi-720\pardirnatural\qj
+\ls1\ilvl0\cf0      using namespace cocos2d::plugin;\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\qj
+\cf0 \
+	extern ProtocolAnalytics* g_pAnalytics;\
+	extern ProtocolAds* g_pAds;\
+	extern std::string s_strAppKey;\
+\
+	//llamada de ads\
+	g_pAds->showAds(cocos2d::plugin::ProtocolAds::kFullScreenAd);\
+\
+
+\b 8.
+\b0  Implementaci\'f3n de clase de delegate (estructura):\
+\
+	#include <iostream>\
+	\
+	#include "cocos2d.h"\
+	#include "ProtocolAds.h"\
+	#include "GameLayer.h"\
+\
+	class AdsFlurryDelegateHunty: public cocos2d::plugin::AdsListener\
+	\{\
+	public:\
+		\
+		void spaceDidReceiveAd(const char* adSpace);\
+		void spaceDidFailToReceiveAd(const char* adSpace);\
+		void spaceDidDismiss(const char* adSpace);\
+		\
+		virtual void onAdsResult(cocos2d::plugin::AdsResultCode code, const char* msg);\
+		virtual void onPlayerGetPoints(cocos2d::plugin::ProtocolAds* pAdsPlugin, int points);\
+	\};\
+\
+	Ejemplo de c\'f3digo (Hunty Hunter):\
+\
+	void AdsFlurryDelegateHunty::spaceDidReceiveAd(const char* adSpace)\
+	\{\
+		CCScene* currentScene = CCDirector::sharedDirector()->getRunningScene();\
+		if (currentScene != NULL)\
+		\{\
+			GameLayer* delegate = dynamic_cast<GameLayer*>(currentScene->getChildren()->objectAtIndex(0));\
+			delegate->pause();\
+		\}\
+	\}\
+\
+	void AdsFlurryDelegateHunty::spaceDidFailToReceiveAd(const char* adSpace)\
+	\{\
+		CCScene* currentScene = CCDirector::sharedDirector()->getRunningScene();\
+		if (currentScene != NULL)\
+		\{\
+			GameLayer *delegate = dynamic_cast<GameLayer*>(currentScene->getChildren()->objectAtIndex(0));\
+			delegate->adError();\
+		\}\
+	\}\
+\
+	void AdsFlurryDelegateHunty::spaceDidDismiss(const char* adSpace)\
+	\{\
+		CCScene* currentScene = CCDirector::sharedDirector()->getRunningScene();\
+		if (currentScene != NULL)\
+		\{\
+			GameLayer* delegate = dynamic_cast<GameLayer*>(currentScene->getChildren()->objectAtIndex(0));\
+			delegate->resume();\
+		\}\
+	\}\
+\
+	void AdsFlurryDelegateHunty::onAdsResult(cocos2d::plugin::AdsResultCode code, const char* msg)\
+	\{\
+		switch(code)\
+		\{\
+			case cocos2d::plugin::kAdsReceived:\
+				this->spaceDidReceiveAd(msg);\
+				break;\
+			case cocos2d::plugin::kUnknownError:\
+				this->spaceDidFailToReceiveAd(msg);\
+				break;\
+			case cocos2d::plugin::kFullScreenViewDismissed:\
+				this->spaceDidDismiss(msg);\
+				break;\
+			default:\
+				break;\
+		\}\
+	\}\
+\
+	void AdsFlurryDelegateHunty::onPlayerGetPoints(cocos2d::plugin::ProtocolAds* pAdsPlugin, int points)\
+	\{\
+	\}}

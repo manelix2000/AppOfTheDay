@@ -1,0 +1,124 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fswiss\fcharset0 ArialMT;}
+{\colortbl;\red255\green255\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww27980\viewh10960\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural
+
+\f0\fs36 \cf0 \ul \ulc0 Integraci\'f3n Android:\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\qj
+
+\b \cf0 \ulnone 1.
+\b0  	Ejecutar el script 
+\i publish.sh 
+\i0 por l\'ednea de comandos que est\'e1 en la \
+	ruta  
+\i /cocos2d-x-2.2.3/plugin/tools
+\i0  y seguir las instrucciones del script\
+\
+
+\b 2.
+\b0  	Si el script se ha ejecutado con \'e9xito tendremos una carpeta 
+\i publish\
+
+\i0 	dentro de la carpeta de 
+\i plugin
+\i0  de cocos con una jerarqu\'eda de 
+\i plugins 
+\i0 y 
+\i protocols
+\i0 .\
+\
+
+\b 3.
+\b0  	A nuestro proyecto de eclipse a\'f1adirle el proj.android de 
+\i plugin/protocol\
+
+\i0 	y el de 
+\i plugin/plugins/flurry_2, 
+\i0 haciendo que nuestro proyecto tenga\
+	dependencia al del flurry y que el de flurry la tenga al de protocolo \
+	(ya deben de estar a\'f1adidos nuestro proyecto android de juego y el de cocos2dx)
+\i \
+\
+
+\i0\b 4.
+\b0  Modificar el c\'f3digo de 
+\i jni/hellocpp/main.cpp 
+\i0 : \
+\
+	#include "PluginJniHelper.h"\
+\
+	jint JNI_OnLoad(JavaVM *vm, void *reserved)\
+	\{\
+		JniHelper::setJavaVM(vm);\
+		PluginJniHelper::setJavaVM(vm);\
+		return JNI_VERSION_1_4;\
+	\}\
+\
+
+\b 5.
+\b0  Modificar el c\'f3digo java del src :\
+\
+	import org.cocos2dx.plugin.PluginWrapper;\
+\
+	protected void onCreate(Bundle saveInstanceState)\
+	\{\
+		super.onCreate(savedInstanceState);\
+		PluginWrapper.init(this);\
+	\}\
+\
+
+\b 6.
+\b0  Modificar el c\'f3digo de build_native.sh :\
+\
+	NDK_ROOT="/Users/$USER/Android/android-ndk-r8c" (en el inicio de #paths)\
+\
+	PLUGIN_ROOT="$\{COCOS2DX_ROOT\}/plugin" (en las declaraciones de los paths, hay que mirar que el cocos2dx_root apunte al path correcto desde nuestro proyecto)\
+\
+	\CocoaLigature0 # run ndk-build (A\'f1adir el plugin_root al NDK_MODULE_PATH y a\'f1adir paths necesarios para la compilaci\'f3n)\
+\pard\tx529\pardeftab529\pardirnatural
+\cf0 	if [[ "$buildexternalsfromsource" ]]; then\
+    		echo "Building external dependencies from source"\
+			"$NDK_ROOT"/ndk-build -C "$APP_ANDROID_ROOT" -s \\\
+    	    			"NDK_MODULE_PATH=$\{COCOS2DX_ROOT\}:$\{COCOS2DX_ROOT\}/cocos2dx/platform/third_party/android/source:$\{PLUGIN_ROOT\}/publish"\
+	else\
+    		echo "Using prebuilt externals"\
+	    		"$NDK_ROOT"/ndk-build -C "$APP_ANDROID_ROOT"  \\\
+				"NDK_MODULE_PATH=$\{COCOS2DX_ROOT\}:$\{COCOS2DX_ROOT\}/cocos2dx/platform/third_party/android/prebuilt:$\{PLUGIN_ROOT\}/publish"\
+	fi\
+\CocoaLigature1 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\qj
+\cf0 \
+
+\b 7.
+\b0  Modificar el 
+\i AndroidManifest.xml 
+\i0 :
+\i \
+\
+	
+\i0 \CocoaLigature0 <activity\
+\pard\tx529\pardeftab529\pardirnatural
+\cf0       		android:name="com.flurry.android.FlurryFullscreenTakeoverActivity"\
+      		android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode">\
+  	</activity>\
+                         \
+    <uses-permission android:name="android.permission.INTERNET"/>\
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+\i \CocoaLigature1 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\qj
+\cf0 \
+\
+
+\i0\b 8.
+\b0  Modificar el 
+\i Android.mk
+\i0  :\CocoaLigature0 \
+\pard\tx529\pardeftab529\pardirnatural
+\cf0 \
+	LOCAL_WHOLE_STATIC_LIBRARIES += PluginProtocolStatic\
+\
+	$(call import-module,protocols/android)\
+\
+	(Modificar clases a compilar)}
